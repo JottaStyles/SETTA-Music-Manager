@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SETTA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/setta.css" rel="stylesheet">
+    <style>
+        /* estilos especificos de la vista explorar */
+        .explorar-body {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .tabla-wrap {
+            flex: 1;
+            overflow-y: auto;
+        }
+        #tab-explorar,
+        #tab-sets {
+            display: none;
+            flex-direction: column;
+            height: calc(100vh - 52px);
+        }
+
+        /* barra superior de filtros */
+        .filtros-bar {
+            background: var(--gris-osc);
+            border-bottom: 1px solid var(--borde);
+            padding: 0.85rem 1.5rem;
+            flex-shrink: 0;
+        }
+        .chips-row {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            padding: 0.6rem 1.5rem;
+            border-bottom: 1px solid #1e1e1e;
+            flex-shrink: 0;
+        }
+        .bpm-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem 1.5rem;
+            border-bottom: 1px solid #1e1e1e;
+            flex-shrink: 0;
+        }
+        .bpm-lbl {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+            min-width: 130px;
+        }
+        input[type=range] { accent-color: var(--gris-cla); }
+
+        /* set builder */
+        .sets-layout {
+            display: flex;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            flex: 1;
+            overflow-y: auto;
+        }
+        .sets-biblioteca {
+            flex: 1;
+        }
+        .sets-panel {
+            width: 300px;
+            flex-shrink: 0;
+        }
+        .sets-nombre-input {
+            background: var(--surface);
+            border: 1px solid var(--borde);
+            color: var(--txt);
+            border-radius: 2px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.88rem;
+            width: 100%;
+            outline: none;
+            margin-bottom: 0.75rem;
+            font-family: var(--font-body);
+        }
+        .sets-nombre-input:focus { border-color: var(--gris-cla); }
+
+        /* perfil */
+        .perfil-header {
+            background: var(--gris-osc);
+            border-bottom: 1px solid var(--borde);
+            padding: 2rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+        .perfil-avatar {
+            width: 60px;
+            height: 60px;
+            background: var(--gris-cla);
+            color: var(--negro);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-title);
+            font-weight: 900;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        .perfil-nombre {
+            font-family: var(--font-title);
+            font-size: 1.4rem;
+            text-transform: uppercase;
+        }
+        .perfil-correo {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+        .set-guardado-item {
+            background: var(--gris-osc);
+            border: 1px solid var(--borde);
+            padding: 0.85rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.4rem;
+        }
+        .set-guardado-nombre { font-size: 0.88rem; font-weight: 500; }
+        .set-guardado-meta { font-size: 0.72rem; color: var(--muted); }
+
+        /* bpm-diff indicator en tabla */
+        .diff-ok  { color: #6ac86a; }
+        .diff-med { color: #c8b86a; }
+        .diff-bad { color: #c86a6a; }
+    </style>
+</head>
+<body>
+
+<!-- navbar -->
+<nav class="navbar-setta">
+    <span class="navbar-logo"></span>
+    <span style="font-size:0.8rem; color:var(--muted)">
+        Hola, <strong id="nav-nombre" style="color:var(--blanco)">Sebastian</strong>
+    </span>
+</nav>
+
+<div class="app-shell">
+
+    <!-- sidebar -->
+    <div class="sidebar">
+        <a class="sidebar-link activo" data-tab="dashboard" onclick="cambiarTab('dashboard')">
+            Dashboard
+        </a>
+        <a class="sidebar-link" data-tab="explorar" onclick="cambiarTab('explorar')">
+            Explorar
+        </a>
+        <a class="sidebar-link" data-tab="sets" onclick="cambiarTab('sets')">
+            Mis sets
+        </a>
+        <a class="sidebar-link" data-tab="perfil" onclick="cambiarTab('perfil')">
+            Perfil
+        </a>
+
+        <div class="sidebar-user">
+            <div class="sidebar-avatar" id="sb-avatar">S</div>
+            <strong id="sb-nombre">Sebastian</strong>
+            <span id="sb-correo">sebastian@setta.app</span>
+            <div style="margin-top:0.5rem">
+                <a href="#" onclick="cerrarSesion()"
+                   style="font-size:0.72rem; color:#555; text-decoration:none;">
+                    Cerrar sesion
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- contenido principal -->
+    <div class="contenido">
+
+        <!-- ════ DASHBOARD ════ -->
+        <div id="tab-dashboard" class="seccion activa">
+
+            <div class="sec-header">
+                <h4>Dashboard</h4>
+                <p>Bienvenido de nuevo. Esto es lo que tenes hoy.</p>
+            </div>
+
+            <!-- tip del dia -->
+            <div style="padding:1rem 1.5rem 0">
+                <div class="tip-card">
+                    <div class="tip-label">Tip del dia</div>
+                    <div class="tip-texto" id="tip-texto">Cargando...</div>
+                </div>
+            </div>
+
+            <!-- stats -->
+            <div class="label-sec">Resumen</div>
+            <div class="px-3 pb-3">
+                <div class="row g-2">
+                    <div class="col-4">
+                        <div class="stat-card">
+                            <div class="stat-num">1,204</div>
+                            <div class="stat-lbl">Canciones</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-card">
+                            <div class="stat-num" id="dash-nsets">0</div>
+                            <div class="stat-lbl">Sets guardados</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-card">
+                            <div class="stat-num">20</div>
+                            <div class="stat-lbl">Generos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- recomendadas -->
+            <div class="label-sec">Recomendadas para mezclar hoy</div>
+            <div class="px-3 pb-3">
+                <div class="row g-2" id="dash-recs"></div>
+            </div>
+
+            <!-- rangos BPM utiles -->
+            <div class="label-sec">Rangos BPM utiles</div>
+            <div class="px-3 pb-4">
+                <div class="row g-2">
+                    <div class="col-3">
+                        <div class="stat-card">
+                            <div class="stat-num" style="font-size:1.1rem">85-100</div>
+                            <div class="stat-lbl">Trip-Hop / R&B</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="stat-card">
+                            <div class="stat-num" style="font-size:1.1rem">100-115</div>
+                            <div class="stat-lbl">Afrobeat / Hip-Hop</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="stat-card">
+                            <div class="stat-num" style="font-size:1.1rem">120-132</div>
+                            <div class="stat-lbl">House / Techno</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="stat-card">
+                            <div class="stat-num" style="font-size:1.1rem">115-130</div>
+                            <div class="stat-lbl">Metal / Rock</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <!-- fin dashboard -->
+
+
+        <!-- ════ EXPLORAR ════ -->
+        <div id="tab-explorar" class="seccion-flex">
+
+            <!-- barra busqueda -->
+            <div class="filtros-bar">
+                <input class="input-setta" type="text"
+                       id="buscar-exp"
+                       placeholder="Buscar por titulo, artista o BPM..."
+                       oninput="filtrarExp()">
+            </div>
+
+            <!-- chips genero -->
+            <div class="chips-row" id="chips-exp"></div>
+
+            <!-- slider bpm -->
+            <div class="bpm-row">
+                <span class="bpm-lbl" id="lbl-bpm-exp">BPM: 60 - 200</span>
+                <input type="range" min="60" max="200" value="60"
+                       id="bmin-exp" oninput="filtrarExp()" style="flex:1; max-width:220px">
+                <input type="range" min="60" max="200" value="200"
+                       id="bmax-exp" oninput="filtrarExp()" style="flex:1; max-width:220px">
+            </div>
+
+            <!-- label resultados -->
+            <div class="label-sec" id="res-exp" style="padding-top:0.5rem">Todas las canciones</div>
+
+            <!-- tabla + panel match -->
+            <div class="explorar-body">
+
+                <div class="tabla-wrap">
+                    <table class="tabla-canciones">
+                        <thead>
+                            <tr>
+                                <th style="width:36px">#</th>
+                                <th>Cancion</th>
+                                <th style="width:72px">BPM</th>
+                                <th style="width:72px">Tono</th>
+                                <th style="width:90px">Genero</th>
+                                <th style="width:80px">Energia</th>
+                                <th style="width:100px"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-exp"></tbody>
+                    </table>
+                </div>
+
+                <!-- panel match -->
+                <div class="panel-match" id="panel-match">
+                    <div class="panel-hdr">
+                        <span class="panel-hdr-titulo">Match de cancion</span>
+                        <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem"
+                                onclick="cerrarPanel()">x</button>
+                    </div>
+                    <div class="panel-body" id="panel-body"></div>
+                    <div class="panel-footer">
+                        <button class="btn-setta secundario pequeno flex-fill"
+                                onclick="agregarASetDesdePanel()">
+                            + Agregar al set
+                        </button>
+                        <button class="btn-setta primario pequeno flex-fill"
+                                onclick="toast('Exportado')">
+                            Exportar
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <!-- fin explorar -->
+
+
+        <!-- ════ SETS ════ -->
+        <div id="tab-sets" class="seccion-flex">
+
+            <div class="sec-header" style="flex-shrink:0">
+                <h4>Constructor de sets</h4>
+                <p>Armá tu set arrastrando canciones. Se muestra la diferencia de BPM entre tracks.</p>
+            </div>
+
+            <div class="sets-layout">
+
+                <!-- biblioteca del set -->
+                <div class="sets-biblioteca">
+                    <div class="label-sec" style="padding:0 0 0.5rem">Biblioteca rapida</div>
+                    <input class="input-setta" type="text"
+                           id="buscar-sets"
+                           placeholder="Buscar para agregar..."
+                           oninput="filtrarBibliotecaSets()"
+                           style="margin-bottom:0.75rem">
+                    <div id="biblioteca-sets"></div>
+                </div>
+
+                <!-- set actual -->
+                <div class="sets-panel">
+                    <div class="label-sec" style="padding:0 0 0.5rem">Tu set</div>
+                    <input class="sets-nombre-input"
+                           id="set-nombre"
+                           type="text"
+                           placeholder="Nombre del set...">
+                    <div id="set-tracks"></div>
+                    <div id="set-vacio"
+                         style="border:1px dashed var(--borde);padding:2rem;text-align:center;
+                                font-size:0.8rem;color:var(--muted);">
+                        Agrega canciones desde la biblioteca
+                    </div>
+                    <div style="margin-top:1rem;display:flex;gap:0.5rem">
+                        <button class="btn-setta primario pequeno flex-fill"
+                                onclick="guardarSet()">Guardar set</button>
+                        <button class="btn-setta secundario pequeno"
+                                onclick="limpiarSet()">Limpiar</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <!-- fin sets -->
+
+
+        <!-- ════ PERFIL ════ -->
+        <div id="tab-perfil" class="seccion">
+
+            <div class="perfil-header">
+                <div class="perfil-avatar" id="perf-av">S</div>
+                <div>
+                    <div class="perfil-nombre" id="perf-nombre">Sebastian</div>
+                    <div class="perfil-correo" id="perf-correo">sebastian@setta.app</div>
+                </div>
+            </div>
+
+            <div class="container-fluid px-3 py-3">
+
+                <div class="label-sec" style="padding:0 0 0.5rem">Estadisticas</div>
+                <div class="row g-2 mb-4">
+                    <div class="col-4">
+                        <div class="stat-card">
+                            <div class="stat-num" id="perf-nsets">0</div>
+                            <div class="stat-lbl">Sets guardados</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-card">
+                            <div class="stat-num">47</div>
+                            <div class="stat-lbl">Busquedas</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-card">
+                            <div class="stat-num">12</div>
+                            <div class="stat-lbl">Matches</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="label-sec" style="padding:0 0 0.5rem">Mis sets</div>
+                <div id="perfil-sets">
+                    <p style="font-size:0.82rem;color:var(--muted)">
+                        No guardaste sets todavia.
+                    </p>
+                </div>
+
+                <div style="margin-top:1.5rem">
+                    <button class="btn-setta secundario pequeno"
+                            onclick="window.location='index.html'">
+                        Cerrar sesion
+                    </button>
+                </div>
+
+            </div>
+        </div>
+        <!-- fin perfil -->
+
+
+    </div>
+    <!-- fin contenido -->
+
+</div>
+<!-- fin app-shell -->
+
+<!-- mini player flotante YouTube -->
+<div id="player-wrap" style="position:fixed;bottom:1rem;right:1rem;
+     z-index:999;background:var(--gris-osc);border:1px solid var(--borde);
+     padding:0.6rem;display:none;min-width:280px;">
+    <div style="display:flex;justify-content:space-between;
+                align-items:center;margin-bottom:0.4rem">
+        <span id="player-titulo" style="font-size:0.75rem;color:var(--gris-cla);
+              font-family:var(--font-mono);white-space:nowrap;overflow:hidden;
+              text-overflow:ellipsis;max-width:220px;"></span>
+        <button onclick="cerrarPlayer()"
+                style="background:none;border:none;color:var(--muted);
+                       cursor:pointer;font-size:1rem;padding:0 0.25rem;flex-shrink:0">
+            x
+        </button>
+    </div>
+    <iframe id="player-frame" width="260" height="52"
+            frameborder="0"
+            allow="autoplay; encrypted-media"
+            style="display:block">
+    </iframe>
+</div>
+
+<!-- toast container -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- scripts -->
+<script src="js/api.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/explorar.js"></script>
+<script src="js/sets.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
